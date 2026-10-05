@@ -131,19 +131,19 @@ The AI is instructed to use the **actual dataset analysis**, so recommendations 
 
 ### 🔧 n8n Workflow
 
-![n8n Workflow](screenshots/workflow.png)
+![n8n Workflow](Screenshots/workflow.png)
 
 ### 📊 Dashboard Overview
 
-![Dashboard Overview](screenshots/dashboard-overview.png)
+![Dashboard Overview](Screenshots/dashboard-overview.png)
 
 ### 🤖 AI Analysis
 
-![AI Analysis](screenshots/ai-analysis.png)
+![AI Analysis](Screenshots/ai-analysis.png)
 
 ### 🔍 Column Quality Profile
 
-![Column Profile](screenshots/column-profile.png)
+![Column Profile](Screenshots/column-profile.png)
 
 ---
 
