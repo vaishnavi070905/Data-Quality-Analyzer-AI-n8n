@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Data Quality Analyzer</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: Inter, Arial, sans-serif;
+        background: #f5f7fb;
+        color: #172033;
+        padding: 30px;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: auto;
+    }
+
+    /* Header */
+    .header {
+        margin-bottom: 25px;
+    }
+
+    .header h1 {
+        font-size: 32px;
+        margin-bottom: 8px;
+    }
+
+    .header p {
+        color: #697386;
+        font-size: 15px;
+    }
+
+    /* Upload */
+    .upload-card {
+        background: white;
+        border: 1px solid #e5e9f0;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 22px;
+    }
+
+    .upload-title {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    .upload-description {
+        color: #697386;
+        font-size: 14px;
+        margin-bottom: 18px;
+    }
+
+    .upload-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    input[type="file"] {
+        flex: 1;
+        min-width: 220px;
+        padding: 12px;
+        border: 1px solid #d9deea;
+        border-radius: 10px;
+        background: #fafbfc;
+    }
+
+    button {
+        border: none;
+        border-radius: 10px;
+        padding: 12px 20px;
+        background: #4f46e5;
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
+        min-height: 44px;
+    }
+
+    button:hover {
+        background: #4338ca;
+    }
+
+    button:disabled {
+        background: #a5a9b8;
+        cursor: not-allowed;
+    }
+
+    #status {
+        margin-top: 14px;
+        font-size: 14px;
+        color: #697386;
+    }
+
+    /* KPI Cards */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 22px;
+    }
+
+    .kpi-card {
+        background: white;
+        border: 1px solid #e5e9f0;
+        border-radius: 16px;
+        padding: 20px;
+    }
+
+    .kpi-label {
+        color: #697386;
+        font-size: 13px;
+        margin-bottom: 8px;
+    }
+
+    .kpi-value {
+        font-size: 28px;
+        font-weight: 800;
+    }
+
+    /* Main grid */
+    .main-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 22px;
+        margin-bottom: 22px;
+    }
+
+    .card {
+        background: white;
+        border: 1px solid #e5e9f0;
+        border-radius: 16px;
+        padding: 24px;
+    }
+
+    .card h2 {
+        font-size: 19px;
+        margin-bottom: 18px;
+    }
+
+    /* Score */
+    .score-area {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 10px 0 20px;
+    }
+
+    .score-ring {
+        width: 190px;
+        height: 190px;
+        border-radius: 50%;
+        background: conic-gradient(
+            #4f46e5 0deg,
+            #4f46e5 var(--score-angle),
+            #e9ecf3 var(--score-angle),
+            #e9ecf3 360deg
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .score-ring::before {
+        content: "";
+        position: absolute;
+        width: 148px;
+        height: 148px;
+        background: white;
+        border-radius: 50%;
+    }
+
+    .score-content {
+        position: relative;
+        text-align: center;
+    }
+
+    .score-value {
+        font-size: 34px;
+        font-weight: 800;
+    }
+
+    .score-label {
+        color: #697386;
+        font-size: 13px;
+        margin-top: 4px;
+    }
+
+    /* Dimensions */
+    .dimension {
+        margin-bottom: 22px;
+    }
+
+    .dimension:last-child {
+        margin-bottom: 0;
+    }
+
+    .dimension-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .dimension-header span {
+        font-weight: 600;
+    }
+
+    .dimension-header strong {
+        font-size: 14px;
+    }
+
+    .progress-track {
+        height: 9px;
+        border-radius: 10px;
+        background: #edf0f5;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        width: 0%;
+        border-radius: 10px;
+        background: #4f46e5;
+        transition: width 0.5s ease;
+    }
+
+    /* AI Section */
+    .ai-card {
+        margin-bottom: 22px;
+    }
+
+    .ai-intro {
+        color: #697386;
+        font-size: 14px;
+        margin-bottom: 18px;
+    }
+
+    .ai-section {
+        margin-bottom: 18px;
+    }
+
+    .ai-section:last-child {
+        margin-bottom: 0;
+    }
+
+    .ai-section h3 {
+        font-size: 15px;
+        margin-bottom: 8px;
+    }
+
+    .ai-section p {
+        color: #4b5565;
+        line-height: 1.6;
+        font-size: 14px;
+    }
+
+    .ai-list {
+        padding-left: 20px;
+    }
+
+    .ai-list li {
+        margin-bottom: 8px;
+        color: #4b5565;
+        line-height: 1.5;
+        font-size: 14px;
+    }
+
+    .quick-win {
+        background: #f5f7ff;
+        border: 1px solid #dfe4ff;
+        border-radius: 12px;
+        padding: 14px;
+        color: #374151;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    /* Table */
+    .table-card {
+        margin-bottom: 22px;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 800px;
+    }
+
+    th {
+        text-align: left;
+        font-size: 12px;
+        color: #697386;
+        padding: 12px;
+        border-bottom: 1px solid #e5e9f0;
+        white-space: nowrap;
+    }
+
+    td {
+        padding: 13px 12px;
+        border-bottom: 1px solid #edf0f4;
+        font-size: 13px;
+        vertical-align: middle;
+    }
+
+    .type-badge {
+        display: inline-block;
+        padding: 4px 9px;
+        border-radius: 20px;
+        background: #eef0ff;
+        color: #4338ca;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .mini-progress {
+        width: 100px;
+        height: 7px;
+        background: #edf0f5;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .mini-progress-fill {
+        height: 100%;
+        background: #4f46e5;
+        border-radius: 10px;
+    }
+
+    .good {
+        color: #15803d;
+        font-weight: 700;
+    }
+
+    .warning {
+        color: #b45309;
+        font-weight: 700;
+    }
+
+    .danger {
+        color: #b91c1c;
+        font-weight: 700;
+    }
+
+    /* Empty state */
+    #results {
+        display: none;
+    }
+
+    .error {
+        color: #b91c1c !important;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+        .kpi-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .main-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 600px) {
+        body {
+            padding: 16px;
+        }
+
+        .kpi-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .header h1 {
+            font-size: 26px;
+        }
+
+        .upload-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        input[type="file"],
+        button {
+            width: 100%;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- Header -->
+    <div class="header">
+        <h1>Data Quality Analyzer</h1>
+        <p>Upload a CSV file to analyze completeness, validity, duplicates, and overall data quality.</p>
+    </div>
+
+    <!-- Upload -->
+    <div class="upload-card">
+        <div class="upload-title">Analyze your CSV</div>
+
+        <div class="upload-description">
+            Upload a CSV file and let the n8n workflow analyze its data quality.
+        </div>
+
+        <div class="upload-row">
+            <input
+                type="file"
+                id="fileInput"
+                accept=".csv,text/csv"
+            >
+
+            <button id="analyzeBtn">
+                Analyze Data
+            </button>
+        </div>
+
+        <div id="status"></div>
+    </div>
+
+    <!-- Results -->
+    <div id="results">
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+
+            <div class="kpi-card">
+                <div class="kpi-label">Total Rows</div>
+                <div class="kpi-value" id="totalRows">0</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-label">Columns</div>
+                <div class="kpi-value" id="totalColumns">0</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-label">Missing Values</div>
+                <div class="kpi-value" id="missingValues">0</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-label">Duplicate Rows</div>
+                <div class="kpi-value" id="duplicateRows">0</div>
+            </div>
+
+        </div>
+
+        <!-- Score + Dimensions -->
+        <div class="main-grid">
+
+            <!-- Overall Quality -->
+            <div class="card">
+
+                <h2>Overall Quality</h2>
+
+                <div class="score-area">
+
+                    <div class="score-ring" id="scoreRing">
+
+                        <div class="score-content">
+
+                            <div class="score-value" id="qualityScore">
+                                0%
+                            </div>
+
+                            <div class="score-label">
+                                Quality Score
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Quality Dimensions -->
+            <div class="card">
+
+                <h2>Quality Dimensions</h2>
+
+                <!-- Completeness -->
+                <div class="dimension">
+
+                    <div class="dimension-header">
+                        <span>Completeness</span>
+                        <strong id="completeness">0%</strong>
+                    </div>
+
+                    <div class="progress-track">
+                        <div
+                            class="progress-fill"
+                            id="completenessBar"
+                        ></div>
+                    </div>
+
+                </div>
+
+                <!-- Validity -->
+                <div class="dimension">
+
+                    <div class="dimension-header">
+                        <span>Validity</span>
+                        <strong id="validity">0%</strong>
+                    </div>
+
+                    <div class="progress-track">
+                        <div
+                            class="progress-fill"
+                            id="validityBar"
+                        ></div>
+                    </div>
+
+                </div>
+
+                <!-- Duplicate Health -->
+                <div class="dimension">
+
+                    <div class="dimension-header">
+                        <span>Duplicate Health</span>
+                        <strong id="duplicateHealth">0%</strong>
+                    </div>
+
+                    <div class="progress-track">
+                        <div
+                            class="progress-fill"
+                            id="duplicateHealthBar"
+                        ></div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- AI Analysis -->
+        <div class="card ai-card">
+
+            <h2>AI Quality Analysis</h2>
+
+            <div class="ai-intro">
+                AI-generated observations and practical recommendations based on the detected data-quality results.
+            </div>
+
+            <div id="aiContent"></div>
+
+        </div>
+
+        <!-- Column Profile -->
+        <div class="card table-card">
+
+            <h2>Column Quality Profile</h2>
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+                            <th>Column</th>
+                            <th>Type</th>
+                            <th>Missing</th>
+                            <th>Invalid</th>
+                            <th>Unique</th>
+                            <th>Completeness</th>
+                            <th>Validity</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="columnTableBody"></tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+const WEBHOOK_URL =
+    "https://vaishnavin.app.n8n.cloud/webhook-test/data-quality";
+
+
+const fileInput =
+    document.getElementById("fileInput");
+
+const analyzeBtn =
+    document.getElementById("analyzeBtn");
+
+const status =
+    document.getElementById("status");
+
+const results =
+    document.getElementById("results");
+
+
+// --------------------------------------------------
+// Utility functions
+// --------------------------------------------------
+
+function escapeHTML(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+function clamp(value, min = 0, max = 100) {
+
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+        return min;
+    }
+
+    return Math.min(
+        max,
+        Math.max(min, number)
+    );
+}
+
+
+function formatNumber(value) {
+
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+        return "0";
+    }
+
+    return number.toLocaleString();
+}
+
+
+function formatPercent(value) {
+
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+        return "0.00%";
+    }
+
+    return `${number.toFixed(2)}%`;
+}
+
+
+function getScoreClass(value) {
+
+    const number = Number(value);
+
+    if (number >= 90) {
+        return "good";
+    }
+
+    if (number >= 70) {
+        return "warning";
+    }
+
+    return "danger";
+}
+
+
+// --------------------------------------------------
+// Progress bar
+// --------------------------------------------------
+
+function setProgressBar(elementId, value) {
+
+    const element =
+        document.getElementById(elementId);
+
+    if (!element) {
+        return;
+    }
+
+    const safeValue =
+        clamp(value);
+
+    element.style.width =
+        `${safeValue}%`;
+}
+
+
+// --------------------------------------------------
+// AI parser
+// --------------------------------------------------
+
+function parseAIResponse(text) {
+
+    const result = {
+        overall: "",
+        findings: [],
+        impact: [],
+        recommendations: [],
+        quickWin: ""
+    };
+
+    if (!text) {
+        return result;
+    }
+
+    let cleaned =
+        String(text)
+            .replace(/\*\*/g, "")
+            .replace(/```/g, "")
+            .trim();
+
+
+    /*
+       Try to find sections even when the model
+       returns them in one long paragraph.
+    */
+
+    const sectionNames = [
+        "Overall Assessment:",
+        "Key Findings:",
+        "Impact:",
+        "Recommendations:",
+        "Quick Win:"
+    ];
+
+
+    const positions = [];
+
+    sectionNames.forEach(name => {
+
+        const index =
+            cleaned.toLowerCase()
+                .indexOf(name.toLowerCase());
+
+        if (index !== -1) {
+
+            positions.push({
+                name,
+                index
+            });
+
+        }
+
+    });
+
+
+    positions.sort(
+        (a, b) => a.index - b.index
+    );
+
+
+    if (positions.length === 0) {
+
+        result.overall =
+            cleaned;
+
+        return result;
+    }
+
+
+    positions.forEach((section, index) => {
+
+        const start =
+            section.index +
+            section.name.length;
+
+        const end =
+            index + 1 < positions.length
+                ? positions[index + 1].index
+                : cleaned.length;
+
+        const content =
+            cleaned
+                .slice(start, end)
+                .trim();
+
+
+        switch (section.name) {
+
+            case "Overall Assessment:":
+                result.overall = content;
+                break;
+
+
+            case "Key Findings:":
+                result.findings =
+                    parseBulletList(content);
+                break;
+
+
+            case "Impact:":
+                result.impact =
+                    parseBulletList(content);
+                break;
+
+
+            case "Recommendations:":
+                result.recommendations =
+                    parseBulletList(content);
+                break;
+
+
+            case "Quick Win:":
+                result.quickWin = content;
+                break;
+
+        }
+
+    });
+
+
+    return result;
+}
+
+
+function parseBulletList(text) {
+
+    return String(text)
+        .split(/\n|(?=\s*-\s+)/)
+        .map(item =>
+            item
+                .replace(/^\s*-\s*/, "")
+                .trim()
+        )
+        .filter(Boolean);
+
+}
+
+
+// --------------------------------------------------
+// Render AI
+// --------------------------------------------------
+
+function renderAI(text) {
+
+    const container =
+        document.getElementById("aiContent");
+
+    if (!container) {
+        return;
+    }
+
+
+    const parsed =
+        parseAIResponse(text);
+
+
+    let html = "";
+
+
+    if (parsed.overall) {
+
+        html += `
+            <div class="ai-section">
+                <h3>Overall Assessment</h3>
+                <p>${escapeHTML(parsed.overall)}</p>
+            </div>
+        `;
+
+    }
+
+
+    if (parsed.findings.length > 0) {
+
+        html += `
+            <div class="ai-section">
+                <h3>Key Findings</h3>
+                <ul class="ai-list">
+                    ${parsed.findings
+                        .map(item =>
+                            `<li>${escapeHTML(item)}</li>`
+                        )
+                        .join("")}
+                </ul>
+            </div>
+        `;
+
+    }
+
+
+    if (parsed.impact.length > 0) {
+
+        html += `
+            <div class="ai-section">
+                <h3>Impact</h3>
+                <ul class="ai-list">
+                    ${parsed.impact
+                        .map(item =>
+                            `<li>${escapeHTML(item)}</li>`
+                        )
+                        .join("")}
+                </ul>
+            </div>
+        `;
+
+    }
+
+
+    if (parsed.recommendations.length > 0) {
+
+        html += `
+            <div class="ai-section">
+                <h3>Recommendations</h3>
+                <ul class="ai-list">
+                    ${parsed.recommendations
+                        .map(item =>
+                            `<li>${escapeHTML(item)}</li>`
+                        )
+                        .join("")}
+                </ul>
+            </div>
+        `;
+
+    }
+
+
+    if (parsed.quickWin) {
+
+        html += `
+            <div class="ai-section">
+                <h3>Quick Win</h3>
+                <div class="quick-win">
+                    ${escapeHTML(parsed.quickWin)}
+                </div>
+            </div>
+        `;
+
+    }
+
+
+    if (!html) {
+
+        html = `
+            <div class="ai-section">
+                <p>${escapeHTML(text || "No AI analysis available.")}</p>
+            </div>
+        `;
+
+    }
+
+
+    container.innerHTML = html;
+
+}
+
+
+// --------------------------------------------------
+// Render column profile
+// --------------------------------------------------
+
+function renderColumns(columns) {
+
+    const tbody =
+        document.getElementById(
+            "columnTableBody"
+        );
+
+    tbody.innerHTML = "";
+
+
+    if (!Array.isArray(columns)) {
+        return;
+    }
+
+
+    columns.forEach(column => {
+
+        const completeness =
+            clamp(column.completeness);
+
+        const validity =
+            clamp(column.validity);
+
+
+        const completenessClass =
+            completeness >= 90
+                ? "good"
+                : completeness >= 70
+                    ? "warning"
+                    : "danger";
+
+
+        const validityClass =
+            validity >= 90
+                ? "good"
+                : validity >= 70
+                    ? "warning"
+                    : "danger";
+
+
+        const row =
+            document.createElement("tr");
+
+
+        row.innerHTML = `
+
+            <td>
+                ${escapeHTML(column.column)}
+            </td>
+
+            <td>
+                <span class="type-badge">
+                    ${escapeHTML(column.detectedType)}
+                </span>
+            </td>
+
+            <td class="${column.missingValues > 0 ? "warning" : "good"}">
+                ${formatNumber(column.missingValues)}
+            </td>
+
+            <td class="${column.invalidValues > 0 ? "danger" : "good"}">
+                ${formatNumber(column.invalidValues)}
+            </td>
+
+            <td>
+                ${formatNumber(column.uniqueValues)}
+            </td>
+
+            <td>
+
+                <div style="display:flex;align-items:center;gap:8px;">
+
+                    <div class="mini-progress">
+                        <div
+                            class="mini-progress-fill"
+                            style="width:${completeness}%"
+                        ></div>
+                    </div>
+
+                    <span class="${completenessClass}">
+                        ${formatPercent(completeness)}
+                    </span>
+
+                </div>
+
+            </td>
+
+            <td>
+
+                <span class="${validityClass}">
+                    ${formatPercent(validity)}
+                </span>
+
+            </td>
+        `;
+
+
+        tbody.appendChild(row);
+
+    });
+
+}
+
+
+// --------------------------------------------------
+// Analyze CSV
+// --------------------------------------------------
+
+analyzeBtn.addEventListener(
+    "click",
+    async () => {
+
+        const file =
+            fileInput.files[0];
+
+
+        if (!file) {
+
+            status.textContent =
+                "Please select a CSV file first.";
+
+            status.className =
+                "error";
+
+            return;
+        }
+
+
+        if (
+            !file.name
+                .toLowerCase()
+                .endsWith(".csv")
+        ) {
+
+            status.textContent =
+                "Please select a CSV file.";
+
+            status.className =
+                "error";
+
+            return;
+        }
+
+
+        analyzeBtn.disabled = true;
+
+        status.className = "";
+
+        status.textContent =
+            "Analyzing your CSV...";
+
+
+        results.style.display =
+            "none";
+
+
+        try {
+
+            const formData =
+                new FormData();
+
+            /*
+               Important:
+               n8n Webhook receives the uploaded
+               file as multipart form data.
+            */
+
+            formData.append(
+                "file",
+                file
+            );
+
+
+            const response =
+                await fetch(
+                    WEBHOOK_URL,
+                    {
+                        method: "POST",
+                        body: formData
+                    }
+                );
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    `Webhook returned ${response.status}`
+                );
+
+            }
+
+
+            const data =
+                await response.json();
+
+
+            /*
+               n8n Respond to Webhook returns:
+
+               {
+                   summary: {...},
+                   columns: [...],
+                   aiSuggestions: ...
+               }
+            */
+
+            const summary =
+                data.summary || {};
+
+
+            const columns =
+                data.columns || [];
+
+
+            // -----------------------------------------
+            // Summary values
+            // -----------------------------------------
+
+            const totalRows =
+                Number(summary.totalRows || 0);
+
+
+            const totalColumns =
+                Number(summary.totalColumns || 0);
+
+
+            const missingValues =
+                Number(summary.missingValues || 0);
+
+
+            const duplicateRows =
+                Number(summary.duplicateRows || 0);
+
+
+            const completeness =
+                clamp(
+                    summary.completeness
+                );
+
+
+            const validity =
+                clamp(
+                    summary.validity
+                );
+
+
+            const duplicateHealth =
+                clamp(
+                    summary.duplicateHealth
+                );
+
+
+            const qualityScore =
+                clamp(
+                    summary.qualityScore
+                );
+
+
+            // -----------------------------------------
+            // KPI Cards
+            // -----------------------------------------
+
+            document.getElementById(
+                "totalRows"
+            ).textContent =
+                formatNumber(totalRows);
+
+
+            document.getElementById(
+                "totalColumns"
+            ).textContent =
+                formatNumber(totalColumns);
+
+
+            document.getElementById(
+                "missingValues"
+            ).textContent =
+                formatNumber(missingValues);
+
+
+            document.getElementById(
+                "duplicateRows"
+            ).textContent =
+                formatNumber(duplicateRows);
+
+
+            // -----------------------------------------
+            // Overall Quality
+            // -----------------------------------------
+
+            document.getElementById(
+                "qualityScore"
+            ).textContent =
+                formatPercent(qualityScore);
+
+
+            const scoreRing =
+                document.getElementById(
+                    "scoreRing"
+                );
+
+
+            scoreRing.style.setProperty(
+                "--score-angle",
+                `${qualityScore * 3.6}deg`
+            );
+
+
+            // -----------------------------------------
+            // Dimensions
+            // -----------------------------------------
+
+            document.getElementById(
+                "completeness"
+            ).textContent =
+                formatPercent(completeness);
+
+
+            document.getElementById(
+                "validity"
+            ).textContent =
+                formatPercent(validity);
+
+
+            document.getElementById(
+                "duplicateHealth"
+            ).textContent =
+                formatPercent(duplicateHealth);
+
+
+            setProgressBar(
+                "completenessBar",
+                completeness
+            );
+
+
+            setProgressBar(
+                "validityBar",
+                validity
+            );
+
+
+            setProgressBar(
+                "duplicateHealthBar",
+                duplicateHealth
+            );
+
+
+            // -----------------------------------------
+            // Column profile
+            // -----------------------------------------
+
+            renderColumns(
+                columns
+            );
+
+
+            // -----------------------------------------
+            // AI Analysis
+            // -----------------------------------------
+
+            const aiSuggestions =
+                data.aiSuggestions ||
+                data.output ||
+                data.text ||
+                data.response ||
+                data.content ||
+                "";
+
+
+            renderAI(
+                aiSuggestions
+            );
+
+
+            // -----------------------------------------
+            // Show results
+            // -----------------------------------------
+
+            results.style.display =
+                "block";
+
+
+            status.textContent =
+                "Analysis completed successfully.";
+
+
+        } catch (error) {
+
+            console.error(error);
+
+
+            status.textContent =
+                "Unable to analyze the file. Please check that your n8n webhook is active and try again.";
+
+
+            status.className =
+                "error";
+
+
+        } finally {
+
+            analyzeBtn.disabled =
+                false;
+
+        }
+
+    }
+);
+
+</script>
+
+</body>
+</html>
