@@ -1,0 +1,258 @@
+{
+  "name": "Data Quality AI",
+  "nodes": [
+    {
+      "parameters": {
+        "binaryPropertyName": "data0"
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "ae3910e6-efc0-409a-80f7-00eb2380d923",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\n\nif (rows.length === 0) {\n  return [\n    {\n      json: {\n        totalRows: 0,\n        columns: 0,\n        missingValues: 0,\n        duplicateRows: 0,\n        completeness: 100,\n        qualityScore: 100\n      }\n    }\n  ];\n}\n\nconst totalRows = rows.length;\nconst columnNames = Object.keys(rows[0].json);\nconst totalColumns = columnNames.length;\n\n// ------------------------------------\n// 1. Count ALL missing values\n// ------------------------------------\nlet missingValues = 0;\n\nfor (const row of rows) {\n  for (const column of columnNames) {\n    const value = row.json[column];\n\n    if (\n      value === null ||\n      value === undefined ||\n      value === ''\n    ) {\n      missingValues++;\n    }\n  }\n}\n\n// ------------------------------------\n// 2. Find duplicate rows\n// ------------------------------------\nconst seen = new Set();\nlet duplicateRows = 0;\n\nfor (const row of rows) {\n  const rowString = JSON.stringify(row.json);\n\n  if (seen.has(rowString)) {\n    duplicateRows++;\n  } else {\n    seen.add(rowString);\n  }\n}\n\n// ------------------------------------\n// 3. Calculate completeness\n// ------------------------------------\nconst totalCells = totalRows * totalColumns;\n\nconst completeness = totalCells === 0\n  ? 100\n  : ((totalCells - missingValues) / totalCells) * 100;\n\n// ------------------------------------\n// 4. Calculate quality score\n// ------------------------------------\n// Missing values and duplicates both affect quality.\n\nconst missingPenalty = totalCells === 0\n  ? 0\n  : (missingValues / totalCells) * 100;\n\nconst duplicatePenalty = totalRows === 0\n  ? 0\n  : (duplicateRows / totalRows) * 100;\n\nconst qualityScore = Math.max(\n  0,\n  100 - missingPenalty - duplicatePenalty\n);\n\nreturn [\n  {\n    json: {\n      totalRows,\n      columns: totalColumns,\n      missingValues,\n      duplicateRows,\n      completeness: Number(completeness.toFixed(2)),\n      qualityScore: Number(qualityScore.toFixed(2))\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        -80
+      ],
+      "id": "fb00eaf7-96b2-4b7f-8b26-edabd73368f5",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\n\nif (rows.length === 0) {\n  return [];\n}\n\nconst columns = Object.keys(rows[0].json);\n\nconst profile = columns.map(column => {\n  const values = rows.map(item => item.json[column]);\n\n  // Values that are actually present\n  const nonEmptyValues = values.filter(\n    value =>\n      value !== null &&\n      value !== undefined &&\n      value !== ''\n  );\n\n  const missing = values.length - nonEmptyValues.length;\n\n  // ------------------------------------\n  // Unique values\n  // ------------------------------------\n  const unique = new Set(\n    nonEmptyValues.map(value => String(value))\n  ).size;\n\n  // ------------------------------------\n  // Detect numeric values\n  // ------------------------------------\n  const numericValues = nonEmptyValues.filter(value => {\n    const number = Number(String(value).trim());\n    return !isNaN(number) && isFinite(number);\n  });\n\n  const numericRatio =\n    nonEmptyValues.length === 0\n      ? 0\n      : numericValues.length / nonEmptyValues.length;\n\n  // ------------------------------------\n  // Detect basic column type\n  // ------------------------------------\n  let detectedType = 'Text';\n\n  // If at least 80% of non-empty values\n  // are numeric, treat the column as Number.\n  if (numericRatio >= 0.8) {\n    detectedType = 'Number';\n  }\n\n  // ------------------------------------\n  // Calculate validity\n  // ------------------------------------\n  let validValues;\n  let invalidValues;\n\n  if (detectedType === 'Number') {\n    validValues = numericValues.length;\n    invalidValues = nonEmptyValues.length - validValues;\n  } else {\n    // For Text columns, every non-empty value\n    // is considered structurally valid.\n    validValues = nonEmptyValues.length;\n    invalidValues = 0;\n  }\n\n  const validity =\n    nonEmptyValues.length === 0\n      ? 100\n      : (validValues / nonEmptyValues.length) * 100;\n\n  // ------------------------------------\n  // Calculate completeness\n  // ------------------------------------\n  const completeness =\n    values.length === 0\n      ? 100\n      : ((values.length - missing) / values.length) * 100;\n\n  return {\n    column,\n    detectedType,\n\n    totalValues: values.length,\n\n    missingValues: missing,\n\n    uniqueValues: unique,\n\n    validValues,\n\n    invalidValues,\n\n    completeness: Number(completeness.toFixed(2)),\n\n    validity: Number(validity.toFixed(2))\n  };\n});\n\nreturn profile.map(item => ({\n  json: item\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        96
+      ],
+      "id": "ec056009-e484-426c-8b1a-ba0b3ef0c261",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        640,
+        0
+      ],
+      "id": "ef71c538-f8e6-40b2-9bc0-5ca8b1f896dc",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nlet summary = {};\nlet columns = [];\n\n// ------------------------------------\n// Collect overall metrics and columns\n// ------------------------------------\nfor (const item of items) {\n  const data = item.json;\n\n  // Overall metrics\n  if (data.totalRows !== undefined) {\n    summary = {\n      totalRows: data.totalRows,\n      totalColumns: data.columns,\n      missingValues: data.missingValues,\n      duplicateRows: data.duplicateRows,\n      completeness: data.completeness\n    };\n  }\n\n  // Column profiling\n  if (data.column !== undefined) {\n    columns.push({\n      column: data.column,\n      detectedType: data.detectedType,\n      totalValues: data.totalValues,\n      missingValues: data.missingValues,\n      uniqueValues: data.uniqueValues,\n      validValues: data.validValues,\n      invalidValues: data.invalidValues,\n      completeness: data.completeness,\n      validity: data.validity\n    });\n  }\n}\n\n// ------------------------------------\n// Calculate overall validity\n// ------------------------------------\nconst validity =\n  columns.length === 0\n    ? 100\n    : columns.reduce(\n        (sum, column) => sum + column.validity,\n        0\n      ) / columns.length;\n\n// ------------------------------------\n// Calculate duplicate health\n// ------------------------------------\nconst duplicateHealth =\n  summary.totalRows === 0\n    ? 100\n    : (\n        (summary.totalRows - summary.duplicateRows) /\n        summary.totalRows\n      ) * 100;\n\n// ------------------------------------\n// Calculate overall quality score\n// ------------------------------------\n// Equal weight for all 3 dimensions\nconst qualityScore =\n  (\n    summary.completeness +\n    validity +\n    duplicateHealth\n  ) / 3;\n\n// ------------------------------------\n// Final result\n// ------------------------------------\nsummary = {\n  ...summary,\n\n  validity: Number(validity.toFixed(2)),\n\n  duplicateHealth: Number(\n    duplicateHealth.toFixed(2)\n  ),\n\n  qualityScore: Number(\n    qualityScore.toFixed(2)\n  )\n};\n\nreturn [\n  {\n    json: {\n      summary,\n      columns\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        0
+      ],
+      "id": "bcd60c94-3a9d-41f0-8f75-5d56f3f42eca",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1520,
+        0
+      ],
+      "id": "fd104538-3a05-4bdd-b36e-cd24e8a33631",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "data-quality",
+        "responseMode": "responseNode",
+        "options": {
+          "binaryPropertyName": "data"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -16,
+        0
+      ],
+      "id": "c71fe595-347f-4f45-846c-1cac643a6a12",
+      "name": "Webhook",
+      "webhookId": "cc390ca5-781b-433d-8ffe-a5b98f439455"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a Data Quality Analyst.\n\nAnalyze ONLY the dataset quality information provided below.\n\nGive a concise, simple and practical analysis.\n\nRules:\n1. Use only the numbers and column names provided.\n2. Do not assume the business purpose of any column.\n3. Do not invent reasons for missing values or duplicates.\n4. Do not use complicated statistical or machine-learning methods.\n5. Keep every point short and easy to understand.\n6. Mention actual numbers whenever possible.\n7. Focus on the most important issues.\n8. Give at most 3 key findings.\n9. Give at most 3 recommendations.\n10. Give only 1 quick win.\n11. Keep the complete response under 180 words.\n12. Do not use Markdown symbols such as **, *, #, or backticks.\n\nReturn EXACTLY this format:\n\nOverall Assessment:\n<1-2 short sentences>\n\nKey Findings:\n- <short finding with actual number>\n- <short finding with actual number>\n- <short finding with actual number>\n\nImpact:\n- <short explanation>\n- <short explanation>\n\nRecommendations:\n- <short practical recommendation>\n- <short practical recommendation>\n- <short practical recommendation>\n\nQuick Win:\n<one short actionable suggestion>\n\nDataset Quality Information:\n\n{{ JSON.stringify($json) }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1008,
+        0
+      ],
+      "id": "f6c9eda1-967b-49f5-b951-4d73730c8c48",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b"
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1248,
+        208
+      ],
+      "id": "2dcec18b-beda-4006-ba24-82db5bd46a90",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "pdASfWgon0jVEAi3",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('Code in JavaScript2').first().json;\n\nconst ai = $json;\n\nconst aiSuggestions =\n  ai.output ??\n  ai.text ??\n  ai.response ??\n  ai.content ??\n  ai.aiSuggestions ??\n  JSON.stringify(ai);\n\nreturn [\n  {\n    json: {\n      summary: original.summary,\n      columns: original.columns,\n      aiSuggestions\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        0
+      ],
+      "id": "15f85bf4-f76b-4104-8c6a-cc3b11f3c310",
+      "name": "Code in JavaScript3"
+    }
+  ],
+  "connections": {
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  }
+}
