@@ -1,0 +1,26 @@
+Product ID,Product,Category,Price,Rating,Discount
+1,Laptop,Electronics,55000,4.5,10
+2,Keyboard,Electronics,2500,4.2,5
+3,Mouse,Electronics,1200,4.4,8
+4,Monitor,Electronics,18000,4.6,12
+5,Headphones,Electronics,3500,4.1,7
+6,Office Chair,Furniture,9500,4.3,15
+7,Desk,Furniture,12000,4.5,10
+8,Notebook,Stationery,180,4.0,3
+9,Pen Set,Stationery,250,4.2,5
+10,Backpack,Accessories,2200,4.4,8
+11,USB Cable,Electronics,450,4.1,6
+12,Webcam,Electronics,4200,4.5,9
+13,Table Lamp,Furniture,1800,4.3,7
+14,Water Bottle,Accessories,750,4.0,4
+15,Calculator,Stationery,600,4.6,5
+16,Phone Stand,Accessories,900,4.2,6
+17,External SSD,Electronics,8500,4.7,11
+18,Printer,Electronics,14500,4.3,13
+19,File Folder,Stationery,120,4.1,2
+20,Desk Mat,Accessories,650,4.4,5
+21,Bookshelf,Furniture,7800,4.5,14
+22,Microphone,Electronics,5200,4.6,10
+23,Power Bank,Electronics,2800,4.2,8
+24,Wall Clock,Furniture,1100,4.0,4
+25,Sticky Notes,Stationery,150,4.3,3
